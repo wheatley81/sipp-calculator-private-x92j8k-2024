@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIPP Portfolio Rebalance Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .card { transition: all 0.2s ease-in-out; }
+        .card:hover { transform: translateY(-2px); }
+        .save-toast { transform: translateX(-50%) translateY(100px); transition: transform 0.3s ease-out; }
+        .save-toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 pb-24">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">SIPP Rebalance Calculator</h1>
+                <p class="text-slate-500">Optimise your portfolio for 20-year growth</p>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button onclick="saveData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Save Data
+                </button>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-end min-w-[180px]">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Grand Total</span>
+                    <span id="grand-total-display" class="text-2xl font-bold text-blue-600">£0.00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Summary & Cash Input -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Uninvested Cash (£)</label>
+                <input type="number" id="uninvested-cash" value="20000" step="0.01" 
+                       class="w-full text-xl font-bold bg-slate-50 border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <p class="text-xs text-slate-400 mt-2">Free amount currently in your wallet</p>
+            </div>
+            <div class="card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Current Invested (£)</label>
+                <div id="invested-total" class="text-xl font-bold text-slate-900 mt-3 italic">£0.00</div>
+                <p class="text-xs text-slate-400 mt-2">Value of your existing fund holdings</p>
+            </div>
+            <div class="card bg-slate-900 p-6 rounded-2xl shadow-lg border border-slate-800">
+                <h3 class="text-white font-semibold mb-2">Portfolio Logic</h3>
+                <p class="text-slate-400 text-sm">Targeting broad global diversification. Grand Total includes all holdings + cash.</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-1 rounded uppercase">35% World</span>
+                    <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-1 rounded uppercase">25% S&P 500</span>
+                    <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-1 rounded uppercase">15% FTSE 100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Assets Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200">
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Asset Name</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Units</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Price (£)</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Current Val</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Target %</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">New Target</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assets-body">
+                        <!-- Rows injected by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="flex justify-end">
+            <button onclick="resetToDefaults()" class="text-slate-400 hover:text-rose-500 text-xs font-medium transition-colors flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></button>
+                Reset to Default Template
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-slate-400 text-sm text-center">
+            <p>Designed for local machine use. All data is stored privately in your browser's local cache.</p>
+            <div class="mt-4 flex justify-center gap-6">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <span>Positive = Buy More</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                    <span>Negative = Sell Portion</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="save-toast fixed bottom-8 left-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl font-semibold flex items-center gap-3 pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="text-emerald-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        Data Saved Successfully
+    </div>
+
+    <script>
+        const defaultAssets = [
+            { name: "Fidelity World", units: 16283.84, price: 4.16, target: 0.35 },
+            { name: "iShares S&P 500", units: 90.00, price: 542.35, target: 0.25 },
+            { name: "Vanguard FTSE 100", units: 139.88, price: 209.80, target: 0.15 },
+            { name: "iShares Emerging", units: 1101.63, price: 17.49, target: 0.10 },
+            { name: "Invesco Gold", units: 55.00, price: 368.65, target: 0.10 },
+            { name: "Invesco Silver", units: 143.00, price: 78.65, target: 0.05 }
+        ];
+
+        let currentAssets = [...defaultAssets];
+        
+        const container = document.getElementById('assets-body');
+        const cashInput = document.getElementById('uninvested-cash');
+        const grandTotalDisplay = document.getElementById('grand-total-display');
+        const investedTotalDisplay = document.getElementById('invested-total');
+        const toast = document.getElementById('toast');
+
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('en-GB', {
+                style: 'currency',
+                currency: 'GBP'
+            }).format(num);
+        }
+
+        // Load data from LocalStorage
+        function loadData() {
+            const savedData = localStorage.getItem('sipp_rebalance_data');
+            const savedCash = localStorage.getItem('sipp_rebalance_cash');
+            
+            if (savedData) {
+                currentAssets = JSON.parse(savedData);
+            }
+            if (savedCash) {
+                cashInput.value = savedCash;
+            }
+            renderTable();
+        }
+
+        // Save data to LocalStorage
+        function saveData() {
+            const assetsToSave = [];
+            const rows = container.querySelectorAll('tr');
+            
+            rows.forEach((row, index) => {
+                assetsToSave.push({
+                    name: currentAssets[index].name,
+                    target: currentAssets[index].target,
+                    units: parseFloat(row.querySelector('.units-input').value) || 0,
+                    price: parseFloat(row.querySelector('.price-input').value) || 0
+                });
+            });
+
+            localStorage.setItem('sipp_rebalance_data', JSON.stringify(assetsToSave));
+            localStorage.setItem('sipp_rebalance_cash', cashInput.value);
+            
+            // Show toast
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function resetToDefaults() {
+            if (confirm("Are you sure you want to reset all data to the default template? This cannot be undone.")) {
+                currentAssets = [...defaultAssets];
+                cashInput.value = 20000;
+                localStorage.removeItem('sipp_rebalance_data');
+                localStorage.removeItem('sipp_rebalance_cash');
+                renderTable();
+                calculate();
+            }
+        }
+
+        function renderTable() {
+            container.innerHTML = '';
+            currentAssets.forEach((asset, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-700">${asset.name}</td>
+                    <td class="p-4">
+                        <input type="number" step="0.01" value="${asset.units}" class="units-input w-24 bg-white border border-slate-200 rounded-lg p-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none">
+                    </td>
+                    <td class="p-4">
+                        <input type="number" step="0.01" value="${asset.price}" class="price-input w-24 bg-white border border-slate-200 rounded-lg p-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none">
+                    </td>
+                    <td class="p-4 current-val text-slate-600 font-medium">£0.00</td>
+                    <td class="p-4 text-center">
+                        <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md uppercase tracking-tight">${(asset.target * 100)}%</span>
+                    </td>
+                    <td class="p-4 new-target text-slate-900 font-bold">£0.00</td>
+                    <td class="p-4 action-cell"></td>
+                `;
+                container.appendChild(tr);
+            });
+            calculate();
+        }
+
+        function calculate() {
+            let totalInvested = 0;
+            const rows = container.querySelectorAll('tr');
+            const uninvestedCash = parseFloat(cashInput.value) || 0;
+
+            // First pass: Calculate Total Invested
+            rows.forEach((row, index) => {
+                const units = parseFloat(row.querySelector('.units-input').value) || 0;
+                const price = parseFloat(row.querySelector('.price-input').value) || 0;
+                const value = units * price;
+                totalInvested += value;
+                row.querySelector('.current-val').innerText = formatCurrency(value);
+                row.dataset.currentVal = value;
+            });
+
+            const grandTotal = totalInvested + uninvestedCash;
+            grandTotalDisplay.innerText = formatCurrency(grandTotal);
+            investedTotalDisplay.innerText = formatCurrency(totalInvested);
+
+            // Second pass: Calculate Targets and Actions
+            rows.forEach((row, index) => {
+                const targetPct = currentAssets[index].target;
+                const currentVal = parseFloat(row.dataset.currentVal);
+                const newTarget = grandTotal * targetPct;
+                const action = newTarget - currentVal;
+
+                row.querySelector('.new-target').innerText = formatCurrency(newTarget);
+                
+                const actionCell = row.querySelector('.action-cell');
+                if (action > 0.01) {
+                    actionCell.innerHTML = `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><span class="text-emerald-700 font-bold text-sm">BUY ${formatCurrency(action)}</span></div>`;
+                } else if (action < -0.01) {
+                    actionCell.innerHTML = `<div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-rose-500"></div><span class="text-rose-700 font-bold text-sm">SELL ${formatCurrency(Math.abs(action))}</span></div>`;
+                } else {
+                    actionCell.innerHTML = `<span class="text-slate-400 font-semibold text-sm italic">Balanced</span>`;
+                }
+            });
+        }
+
+        // Event Listeners
+        container.addEventListener('input', calculate);
+        cashInput.addEventListener('input', calculate);
+
+        // Initial Run
+        window.onload = loadData;
+    </script>
+</body>
+</html>
