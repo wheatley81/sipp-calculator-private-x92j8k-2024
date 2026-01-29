@@ -400,8 +400,13 @@
                 const tr = document.createElement('tr');
                 tr.className = "group hover:bg-slate-50/80 transition-all";
                 tr.innerHTML = `
-                    <td class="p-8">
-                        <input type="text" value="${escapeHtml(asset.name)}" oninput="updateAsset(${i}, 'name', this.value)" class="font-bold text-slate-800 text-lg bg-transparent border-b border-transparent focus:border-blue-500 focus:bg-white outline-none w-full transition-all placeholder-slate-300" placeholder="Asset Name">
+                    <td class="p-8 min-w-[300px]">
+                        <input type="text" 
+                               value="${escapeHtml(asset.name)}" 
+                               title="${escapeHtml(asset.name)}"
+                               oninput="updateAsset(${i}, 'name', this.value); this.title=this.value" 
+                               class="font-bold text-slate-800 text-lg bg-transparent border-b border-transparent focus:border-blue-500 focus:bg-white outline-none w-full transition-all placeholder-slate-300 text-ellipsis overflow-hidden" 
+                               placeholder="Asset Name">
                         <div class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-1">SIPP Strategy Asset</div>
                     </td>
                     <td class="p-8">
