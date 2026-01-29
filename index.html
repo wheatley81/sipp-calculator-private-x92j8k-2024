@@ -24,19 +24,19 @@
 <body class="bg-slate-50 min-h-screen">
 
     <!-- SECURITY GATEWAY -->
-    <div id="gatekeeper" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-6">
-        <div class="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-2xl text-center fade-in border border-slate-100">
-            <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    <div id="gatekeeper" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4 md:p-6">
+        <div class="max-w-md w-full bg-white rounded-[2.5rem] p-6 md:p-10 shadow-2xl text-center fade-in border border-slate-100">
+            <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             </div>
-            <h2 class="text-3xl font-bold text-slate-900 mb-2 text-balance">Secure Access</h2>
-            <p id="auth-msg" class="text-slate-500 mb-8 text-sm leading-relaxed tracking-tight">Enter your private access code to unlock or create your encrypted vault.</p>
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-2 text-balance">Secure Access</h2>
+            <p id="auth-msg" class="text-slate-500 mb-8 text-xs md:text-sm leading-relaxed tracking-tight">Enter your private access code to unlock or create your encrypted vault.</p>
             
             <div class="space-y-4">
                 <input type="password" id="pass-input" placeholder="••••" 
-                       class="w-full text-center text-4xl tracking-[0.25em] font-bold p-5 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all">
+                       class="w-full text-center text-2xl md:text-4xl tracking-[0.25em] font-bold p-4 md:p-5 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all">
                 
-                <button id="auth-btn" onclick="handleAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl transition-all shadow-lg active:scale-[0.98] text-lg">
+                <button id="auth-btn" onclick="handleAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 md:py-5 rounded-2xl transition-all shadow-lg active:scale-[0.98] text-base md:text-lg">
                     Unlock Dashboard
                 </button>
                 
@@ -48,21 +48,21 @@
     <!-- MAIN DASHBOARD CONTENT -->
     <div id="app-content" class="hidden-app max-w-7xl mx-auto p-4 md:p-10 pb-24 fade-in">
         
-        <header class="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+        <header class="mb-8 md:mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6 md:gap-8">
             <div class="space-y-2 text-center lg:text-left">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-widest mb-2">
                     Portfolio Active
                 </div>
-                <h1 class="text-5xl font-black text-slate-900 tracking-tight">SIPP Optimiser</h1>
-                <p class="text-slate-500 font-medium text-lg">20-year strategic rebalancing tool</p>
+                <h1 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">SIPP Optimiser</h1>
+                <p class="text-slate-500 font-medium text-base md:text-lg">20-year strategic rebalancing tool</p>
             </div>
             
             <div class="flex flex-col sm:flex-row gap-4 items-center">
-                <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm min-w-[240px] flex flex-col items-end">
+                <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm w-full sm:w-auto min-w-[240px] flex flex-col items-center sm:items-end">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Grand Portfolio Total</span>
-                    <span id="display-grand-total" class="text-4xl font-black text-blue-600">£0.00</span>
+                    <span id="display-grand-total" class="text-3xl md:text-4xl font-black text-blue-600">£0.00</span>
                 </div>
-                <button onclick="saveToDevice()" class="h-full bg-slate-900 hover:bg-black text-white px-10 py-6 rounded-[2rem] font-bold shadow-xl transition-all active:scale-95 flex items-center gap-3">
+                <button onclick="saveToDevice()" class="w-full sm:w-auto h-full bg-slate-900 hover:bg-black text-white px-10 py-6 rounded-[2rem] font-bold shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                     Save & Lock
                 </button>
@@ -70,7 +70,7 @@
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <div class="glass-card p-8 rounded-[2.5rem] shadow-sm">
+            <div class="glass-card p-6 md:p-8 rounded-[2.5rem] shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                     <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Available Cash (£)</label>
                     <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
@@ -80,7 +80,7 @@
                 <p class="text-xs text-slate-400 mt-4 italic">Free cash waiting in your Prosper wallet.</p>
             </div>
 
-            <div class="glass-card p-8 rounded-[2.5rem] shadow-sm">
+            <div class="glass-card p-6 md:p-8 rounded-[2.5rem] shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                     <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Currently Invested (£)</label>
                     <svg xmlns="http://www.w3.org/2000/svg" class="text-emerald-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -89,7 +89,7 @@
                 <p class="text-xs text-slate-400 mt-4 italic">Market value of all active units below.</p>
             </div>
 
-            <div class="bg-gradient-to-br from-blue-700 to-indigo-900 p-8 rounded-[2.5rem] shadow-2xl text-white">
+            <div class="bg-gradient-to-br from-blue-700 to-indigo-900 p-6 md:p-8 rounded-[2.5rem] shadow-2xl text-white">
                 <h3 class="font-bold text-xl mb-3 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
                     Security: Zero-Knowledge
@@ -100,37 +100,32 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-[3rem] shadow-xl border border-slate-200 overflow-hidden mb-12">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[900px]">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400">
-                            <th class="p-8 text-[11px] font-black uppercase tracking-[0.2em]">Asset Strategy</th>
-                            <th class="p-8 text-[11px] font-black uppercase tracking-[0.2em]">Units Held</th>
-                            <th class="p-8 text-[11px] font-black uppercase tracking-[0.2em]">Live Price</th>
-                            <th class="p-8 text-[11px] font-black uppercase tracking-[0.2em]">Portfolio Val</th>
-                            <th class="p-8 text-center text-[11px] font-black uppercase tracking-[0.2em]">
-                                Target
-                                <span id="header-target-total" class="block mt-1 text-[9px] opacity-70">100%</span>
-                            </th>
-                            <th class="p-8 text-[11px] font-black uppercase tracking-[0.2em]">Goal Value</th>
-                            <th class="p-8 text-[11px] font-black uppercase tracking-[0.2em]">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fund-rows" class="divide-y divide-slate-50">
-                        <!-- Template generated below -->
-                    </tbody>
-                    <tfoot class="border-t border-slate-200">
-                        <tr>
-                            <td colspan="7" class="p-6 text-center">
-                                 <button onclick="addAsset()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 px-6 rounded-xl transition-all text-xs uppercase tracking-widest flex items-center gap-2 mx-auto">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    Add New Asset
-                                </button>
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+        <div class="bg-white rounded-[2rem] md:rounded-[3rem] shadow-xl border border-slate-200 overflow-hidden mb-12">
+            <!-- HEADER -->
+            <div class="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1.5fr] bg-slate-50 border-b border-slate-100 text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">
+                <div class="p-6">Asset Strategy</div>
+                <div class="p-6">Units Held</div>
+                <div class="p-6">Live Price</div>
+                <div class="p-6">Portfolio Val</div>
+                <div class="p-6 text-center">
+                    Target
+                    <span id="header-target-total" class="block mt-1 text-[9px] opacity-70">100%</span>
+                </div>
+                <div class="p-6">Goal Value</div>
+                <div class="p-6">Action</div>
+            </div>
+            
+            <!-- BODY -->
+            <div id="fund-rows" class="divide-y divide-slate-100">
+                <!-- Template generated below -->
+            </div>
+            
+            <!-- FOOTER -->
+            <div class="bg-slate-50 p-6 border-t border-slate-200 text-center">
+                <button onclick="addAsset()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 px-6 rounded-xl transition-all text-xs uppercase tracking-widest flex items-center gap-2 mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add New Asset
+                </button>
             </div>
         </div>
 
@@ -393,50 +388,65 @@
         }
 
         function render() {
-            const tbody = document.getElementById('fund-rows');
-            tbody.innerHTML = '';
+            const container = document.getElementById('fund-rows');
+            container.innerHTML = '';
             
             assets.forEach((asset, i) => {
-                const tr = document.createElement('tr');
-                tr.className = "group hover:bg-slate-50/80 transition-all";
-                tr.innerHTML = `
-                    <td class="p-8 min-w-[300px]">
+                const row = document.createElement('div');
+                row.className = "group grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1.5fr] gap-4 md:gap-0 p-6 md:p-0 items-center hover:bg-slate-50/80 transition-all border-b border-slate-100 last:border-0";
+                row.innerHTML = `
+                    <div class="col-span-2 md:col-span-1 md:p-6">
+                        <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Asset Strategy</label>
                         <input type="text" 
                                value="${escapeHtml(asset.name)}" 
                                title="${escapeHtml(asset.name)}"
                                oninput="updateAsset(${i}, 'name', this.value); this.title=this.value" 
                                class="font-bold text-slate-800 text-lg bg-transparent border-b border-transparent focus:border-blue-500 focus:bg-white outline-none w-full transition-all placeholder-slate-300 text-ellipsis overflow-hidden" 
                                placeholder="Asset Name">
-                        <div class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-1">SIPP Strategy Asset</div>
-                    </td>
-                    <td class="p-8">
-                        <input type="number" step="0.000001" value="${asset.units}" oninput="updateAsset(${i}, 'units', this.value)" class="units-in w-32 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-sm font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
-                    </td>
-                    <td class="p-8">
-                        <input type="number" step="0.0001" value="${asset.price}" oninput="updateAsset(${i}, 'price', this.value)" class="price-in w-28 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-sm font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
-                    </td>
-                    <td class="p-8 live-val font-bold text-slate-400 tabular-nums">£0.00</td>
-                    <td class="p-8 text-center">
-                        <div class="flex items-center justify-center gap-1">
-                            <input type="number" step="0.01" value="${parseFloat((asset.target * 100).toFixed(2))}" oninput="updateAsset(${i}, 'target', this.value)" class="w-16 text-center bg-slate-50 border-2 border-slate-100 rounded-xl p-2 text-xs font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
+                    </div>
+                    
+                    <div class="col-span-1 md:col-span-1 md:p-6">
+                        <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Units</label>
+                        <input type="number" step="0.000001" value="${asset.units}" oninput="updateAsset(${i}, 'units', this.value)" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-sm font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
+                    </div>
+                    
+                    <div class="col-span-1 md:col-span-1 md:p-6">
+                        <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Price</label>
+                        <input type="number" step="0.0001" value="${asset.price}" oninput="updateAsset(${i}, 'price', this.value)" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-sm font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
+                    </div>
+                    
+                    <div class="col-span-1 md:col-span-1 md:p-6">
+                        <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Portfolio Val</label>
+                        <div class="live-val font-bold text-slate-400 tabular-nums text-lg md:text-base">£0.00</div>
+                    </div>
+                    
+                    <div class="col-span-1 md:col-span-1 md:p-6 text-left md:text-center">
+                        <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Target</label>
+                        <div class="flex items-center md:justify-center gap-1">
+                            <input type="number" step="0.01" value="${parseFloat((asset.target * 100).toFixed(2))}" oninput="updateAsset(${i}, 'target', this.value)" class="w-20 text-center bg-slate-50 border-2 border-slate-100 rounded-xl p-2 text-xs font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
                             <span class="text-xs font-bold text-slate-400">%</span>
                         </div>
-                    </td>
-                    <td class="p-8 target-val font-black text-slate-900 tabular-nums">£0.00</td>
-                    <td class="p-8 action-box flex items-center justify-between gap-4">
+                    </div>
+                    
+                    <div class="col-span-2 md:col-span-1 md:p-6">
+                        <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Goal Value</label>
+                        <div class="target-val font-black text-slate-900 tabular-nums text-lg md:text-base">£0.00</div>
+                    </div>
+                    
+                    <div class="col-span-2 md:col-span-1 md:p-6 flex items-center justify-between gap-4 pt-2 md:pt-0 border-t md:border-t-0 border-slate-50 md:border-none">
                         <div class="action-badge"></div>
                         <button onclick="removeAsset(${i})" class="text-slate-300 hover:text-rose-500 transition-colors p-2" title="Remove Asset">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                         </button>
-                    </td>
+                    </div>
                 `;
-                tbody.appendChild(tr);
+                container.appendChild(row);
             });
             recalculate();
         }
 
         function recalculate() {
-            const rows = document.querySelectorAll('#fund-rows tr');
+            const rows = document.querySelectorAll('#fund-rows > div');
             const cash = parseFloat(document.getElementById('input-cash').value) || 0;
             let currentInvestedTotal = 0;
             let totalTarget = 0;
