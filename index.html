@@ -430,35 +430,36 @@
             activeAssetIndex = null;
         }
 
-        async function fetchProxy(targetUrl) {
-            // List of proxies to try in order
-            // 1. AllOrigins (returns JSON { contents: "string" })
-            // 2. CodeTabs (returns raw content)
-            // 3. WhateverOrigin (returns JSON { contents: "..." })
-            // 4. CorsAnywhere (Heroku demo, might require activation, but worth a shot)
-            const proxies = [
-                {
-                    name: 'AllOrigins',
-                    url: (target) => `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
-                    extract: (data) => JSON.parse(data.contents)
-                },
-                {
-                    name: 'WhateverOrigin',
-                    url: (target) => `https://www.whateverorigin.org/get?url=${encodeURIComponent(target)}`,
-                    extract: (data) => JSON.parse(data.contents)
-                },
-                {
-                    name: 'CodeTabs',
-                    url: (target) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
-                    extract: (data) => data
-                },
-                {
-                    name: 'CorsAnywhere',
-                    url: (target) => `https://cors-anywhere.herokuapp.com/${target}`,
-                    extract: (data) => data
-                }
-            ];
+        // JSONP helper for robust cross-origin fetching
+        function fetchJSONP(url, callbackParam = 'callback') {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+                
+                window[callbackName] = function(data) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data);
+                };
 
+                script.src = `${url}${url.includes('?') ? '&' : '?'}${callbackParam}=${callbackName}`;
+                script.onerror = () => {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    reject(new Error('JSONP request failed'));
+                };
+                
+                document.body.appendChild(script);
+            });
+        }
+
+        async function fetchProxy(targetUrl) {
+            // Strategy:
+            // 1. JSONP via AllOrigins (Most reliable for bypassing strict CORS)
+            // 2. JSONP via WhateverOrigin
+            // 3. Direct Fetch via CodeTabs (Raw)
+            // 4. Direct Fetch via CorsAnywhere
+            
             let lastError = null;
             
             // Try query2 as fallback domain for Yahoo requests
@@ -466,37 +467,48 @@
                 targetUrl,
                 targetUrl.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com')
             ];
-            
-            // Deduplicate if no replacement happened
             const targets = [...new Set(domains)];
 
             for (const target of targets) {
-                for (const proxy of proxies) {
-                    try {
-                        const finalUrl = proxy.url(target);
-                        const res = await fetch(finalUrl);
-                        
-                        if (!res.ok) {
-                            if (res.status === 403 && proxy.name === 'CorsAnywhere') {
-                                throw new Error("Requires activation at cors-anywhere.herokuapp.com/corsdemo");
-                            }
-                            throw new Error(`Status ${res.status}`);
-                        }
-                        
-                        const text = await res.text();
-                        let data;
-                        try {
-                            data = JSON.parse(text);
-                        } catch(e) {
-                             throw new Error("Response was not valid JSON");
-                        }
-                        
-                        return proxy.extract(data);
-                    } catch (e) {
-                        console.warn(`Proxy ${proxy.name} failed for ${target}`, e);
-                        lastError = e;
-                        // Continue to next proxy
+                // 1. JSONP AllOrigins
+                try {
+                    const data = await fetchJSONP(`https://api.allorigins.win/get?url=${encodeURIComponent(target)}`);
+                    return JSON.parse(data.contents);
+                } catch(e) {
+                    console.warn(`JSONP AllOrigins failed for ${target}`, e);
+                    lastError = e;
+                }
+
+                // 2. JSONP WhateverOrigin
+                try {
+                    const data = await fetchJSONP(`https://www.whateverorigin.org/get?url=${encodeURIComponent(target)}`);
+                    return JSON.parse(data.contents);
+                } catch(e) {
+                    console.warn(`JSONP WhateverOrigin failed for ${target}`, e);
+                    lastError = e;
+                }
+
+                // 3. Fetch CodeTabs
+                try {
+                    const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`);
+                    if (!res.ok) throw new Error(`Status ${res.status}`);
+                    return await res.json();
+                } catch(e) {
+                    console.warn(`Fetch CodeTabs failed for ${target}`, e);
+                    lastError = e;
+                }
+                
+                // 4. CorsAnywhere
+                try {
+                    const res = await fetch(`https://cors-anywhere.herokuapp.com/${target}`);
+                    if (!res.ok) {
+                         if (res.status === 403) throw new Error("Requires activation at cors-anywhere.herokuapp.com/corsdemo");
+                         throw new Error(`Status ${res.status}`);
                     }
+                    return await res.json();
+                } catch(e) {
+                    console.warn(`Fetch CorsAnywhere failed for ${target}`, e);
+                    lastError = e;
                 }
             }
             
