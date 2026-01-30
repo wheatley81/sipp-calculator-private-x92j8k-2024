@@ -431,10 +431,38 @@
         }
 
         async function fetchProxy(targetUrl) {
-            const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            return JSON.parse(data.contents);
+            // List of proxies to try in order
+            // 1. AllOrigins (returns JSON { contents: "string" })
+            // 2. CodeTabs (returns raw content)
+            const proxies = [
+                {
+                    url: (target) => `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
+                    extract: (data) => JSON.parse(data.contents)
+                },
+                {
+                    url: (target) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+                    extract: (data) => data
+                }
+            ];
+
+            let lastError = null;
+            
+            for (const proxy of proxies) {
+                try {
+                    const finalUrl = proxy.url(targetUrl);
+                    const res = await fetch(finalUrl);
+                    if (!res.ok) throw new Error(`Status ${res.status}`);
+                    
+                    const data = await res.json();
+                    return proxy.extract(data);
+                } catch (e) {
+                    console.warn(`Proxy failed: ${proxy.url(targetUrl)}`, e);
+                    lastError = e;
+                    // Continue to next proxy
+                }
+            }
+            
+            throw lastError || new Error("All proxies failed");
         }
 
         async function performSearch() {
