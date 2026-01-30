@@ -434,35 +434,67 @@
             // List of proxies to try in order
             // 1. AllOrigins (returns JSON { contents: "string" })
             // 2. CodeTabs (returns raw content)
+            // 3. CorsAnywhere (Heroku demo, might require activation, but worth a shot)
             const proxies = [
                 {
+                    name: 'AllOrigins',
                     url: (target) => `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
                     extract: (data) => JSON.parse(data.contents)
                 },
                 {
+                    name: 'CodeTabs',
                     url: (target) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+                    extract: (data) => data
+                },
+                {
+                    name: 'CorsAnywhere',
+                    url: (target) => `https://cors-anywhere.herokuapp.com/${target}`,
                     extract: (data) => data
                 }
             ];
 
             let lastError = null;
             
-            for (const proxy of proxies) {
-                try {
-                    const finalUrl = proxy.url(targetUrl);
-                    const res = await fetch(finalUrl);
-                    if (!res.ok) throw new Error(`Status ${res.status}`);
-                    
-                    const data = await res.json();
-                    return proxy.extract(data);
-                } catch (e) {
-                    console.warn(`Proxy failed: ${proxy.url(targetUrl)}`, e);
-                    lastError = e;
-                    // Continue to next proxy
+            // Try query2 as fallback domain for Yahoo requests
+            const domains = [
+                targetUrl,
+                targetUrl.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com')
+            ];
+            
+            // Deduplicate if no replacement happened
+            const targets = [...new Set(domains)];
+
+            for (const target of targets) {
+                for (const proxy of proxies) {
+                    try {
+                        const finalUrl = proxy.url(target);
+                        const res = await fetch(finalUrl);
+                        
+                        if (!res.ok) {
+                            if (res.status === 403 && proxy.name === 'CorsAnywhere') {
+                                throw new Error("Requires activation at cors-anywhere.herokuapp.com/corsdemo");
+                            }
+                            throw new Error(`Status ${res.status}`);
+                        }
+                        
+                        const text = await res.text();
+                        let data;
+                        try {
+                            data = JSON.parse(text);
+                        } catch(e) {
+                             throw new Error("Response was not valid JSON");
+                        }
+                        
+                        return proxy.extract(data);
+                    } catch (e) {
+                        console.warn(`Proxy ${proxy.name} failed for ${target}`, e);
+                        lastError = e;
+                        // Continue to next proxy
+                    }
                 }
             }
             
-            throw lastError || new Error("All proxies failed");
+            throw lastError || new Error("All proxies failed. Check network or try again later.");
         }
 
         async function performSearch() {
@@ -501,7 +533,10 @@
                 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = '<div class="text-center text-rose-500 py-4">Search failed. Try again.</div>';
+                container.innerHTML = `<div class="text-center text-rose-500 py-4 px-6 text-sm">
+                    <strong>Search failed.</strong><br>
+                    <span class="opacity-75 block mt-1 text-xs">${e.message || "Network error. Try again later."}</span>
+                </div>`;
             }
         }
 
@@ -546,7 +581,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                alert(`Could not fetch price for ${asset.ticker}`);
+                alert(`Could not fetch price for ${asset.ticker}.\n\n${e.message}`);
                 if(btn) btn.classList.remove('animate-spin');
             }
         }
