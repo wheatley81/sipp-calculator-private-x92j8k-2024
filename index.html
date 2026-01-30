@@ -471,7 +471,17 @@
             const targets = [...new Set(domains)];
 
             for (const target of targets) {
-                // 1. JSONP AllOrigins
+                // 1. CorsProxy.io (Most Reliable)
+                try {
+                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(target)}`);
+                    if (!res.ok) throw new Error(`Status ${res.status}`);
+                    return await res.json();
+                } catch(e) {
+                    console.warn(`Fetch CorsProxy failed for ${target}`, e);
+                    lastError = e;
+                }
+
+                // 2. JSONP AllOrigins
                 try {
                     const data = await fetchJSONP(`https://api.allorigins.win/get?url=${encodeURIComponent(target)}`);
                     return JSON.parse(data.contents);
