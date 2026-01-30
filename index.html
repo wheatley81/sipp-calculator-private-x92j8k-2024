@@ -455,10 +455,11 @@
 
         async function fetchProxy(targetUrl) {
             // Strategy:
-            // 1. JSONP via AllOrigins (Most reliable for bypassing strict CORS)
-            // 2. JSONP via WhateverOrigin
-            // 3. Direct Fetch via CodeTabs (Raw)
-            // 4. Direct Fetch via CorsAnywhere
+            // 1. JSONP via AllOrigins (API)
+            // 2. JSONP via WhateverOrigin (API)
+            // 3. Direct Fetch via CodeTabs (API)
+            // 4. Direct Fetch via CorsAnywhere (API)
+            // 5. Scraper Fallback (HTML via AllOrigins Raw)
             
             let lastError = null;
             
@@ -508,6 +509,43 @@
                     return await res.json();
                 } catch(e) {
                     console.warn(`Fetch CorsAnywhere failed for ${target}`, e);
+                    lastError = e;
+                }
+            }
+
+            // 5. Scraper Fallback (Only for Price Chart requests)
+            if (targetUrl.includes('/chart/')) {
+                try {
+                    // Extract symbol from URL
+                    const match = targetUrl.match(/\/chart\/([^\?]+)/);
+                    if (match && match[1]) {
+                        const symbol = match[1];
+                        console.log(`Attempting Scraper Fallback for ${symbol}`);
+                        const scraperUrl = `https://finance.yahoo.com/quote/${symbol}`;
+                        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(scraperUrl)}`);
+                        if (!res.ok) throw new Error(`Scraper Status ${res.status}`);
+                        const html = await res.text();
+                        
+                        // Regex to find price in initial state JSON
+                        const priceMatch = html.match(/"regularMarketPrice":\{"raw":([\d\.]+)/);
+                        const currencyMatch = html.match(/"currency":"([A-Z]{3})"/);
+                        
+                        if (priceMatch && priceMatch[1]) {
+                            return {
+                                chart: {
+                                    result: [{
+                                        meta: {
+                                            regularMarketPrice: parseFloat(priceMatch[1]),
+                                            currency: currencyMatch ? currencyMatch[1] : 'GBP' // Default to GBP if not found? Or maybe USD.
+                                        }
+                                    }]
+                                }
+                            };
+                        }
+                        throw new Error("Scraper could not find price");
+                    }
+                } catch(e) {
+                    console.warn("Scraper Fallback failed", e);
                     lastError = e;
                 }
             }
