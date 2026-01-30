@@ -140,6 +140,27 @@
             </button>
         </div>
     </div>
+    
+    <!-- MODAL FOR TICKER SEARCH -->
+    <div id="ticker-modal" class="fixed inset-0 z-[150] bg-slate-900/50 hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-[2rem] p-6 shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Link Ticker</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="relative mb-4">
+                <input type="text" id="ticker-search-input" placeholder="Search (e.g. Vanguard FTSE 100)" 
+                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 pl-10 text-sm font-bold focus:bg-white focus:border-blue-500 transition-all outline-none"
+                       onkeyup="if(event.key === 'Enter') performSearch()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <div id="ticker-results" class="overflow-y-auto flex-1 space-y-2 pr-2 min-h-[200px]">
+                <div class="text-center text-slate-400 text-sm py-10 italic">Search for an asset to see live tickers from UK & Global markets.</div>
+            </div>
+        </div>
+    </div>
 
     <div id="save-toast" class="save-toast fixed bottom-12 left-1/2 bg-slate-900 text-white px-10 py-5 rounded-[2rem] shadow-2xl font-black flex items-center gap-4 pointer-events-none z-[200]">
         <div class="bg-emerald-500 rounded-full p-1"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
@@ -157,12 +178,12 @@
 
         // Strategic template (Generic units/prices for security)
         const DEFAULT_ASSETS = [
-            { name: "Fidelity Index World", units: 0, price: 0, target: 0.35 },
-            { name: "iShares S&P 500", units: 0, price: 0, target: 0.25 },
-            { name: "Vanguard FTSE 100", units: 0, price: 0, target: 0.15 },
-            { name: "iShares Emerging Markets", units: 0, price: 0, target: 0.10 },
-            { name: "Invesco Physical Gold", units: 0, price: 0, target: 0.10 },
-            { name: "Invesco Physical Silver", units: 0, price: 0, target: 0.05 }
+            { name: "Fidelity Index World", units: 0, price: 0, target: 0.35, ticker: "" },
+            { name: "iShares S&P 500", units: 0, price: 0, target: 0.25, ticker: "" },
+            { name: "Vanguard FTSE 100", units: 0, price: 0, target: 0.15, ticker: "" },
+            { name: "iShares Emerging Markets", units: 0, price: 0, target: 0.10, ticker: "" },
+            { name: "Invesco Physical Gold", units: 0, price: 0, target: 0.10, ticker: "" },
+            { name: "Invesco Physical Silver", units: 0, price: 0, target: 0.05, ticker: "" }
         ];
 
         let assets = [...DEFAULT_ASSETS];
@@ -365,7 +386,7 @@
         }
 
         function addAsset() {
-            assets.push({ name: "New Asset", units: 0, price: 0, target: 0 });
+            assets.push({ name: "New Asset", units: 0, price: 0, target: 0, ticker: "" });
             render();
         }
         
@@ -379,12 +400,127 @@
         function updateAsset(index, key, value) {
             if (key === 'target') {
                 assets[index][key] = parseFloat(value) / 100 || 0;
-            } else if (key === 'name') {
+            } else if (key === 'name' || key === 'ticker') {
                  assets[index][key] = value;
             } else {
                  assets[index][key] = parseFloat(value) || 0;
             }
             recalculate(); 
+        }
+
+        // --- API & TICKER LOGIC ---
+        let activeAssetIndex = null;
+
+        function openSearch(index) {
+            activeAssetIndex = index;
+            const modal = document.getElementById('ticker-modal');
+            const input = document.getElementById('ticker-search-input');
+            
+            // Pre-fill with current name
+            input.value = assets[index].name;
+            
+            modal.classList.remove('hidden');
+            input.focus();
+            
+            if (input.value) performSearch();
+        }
+
+        function closeModal() {
+            document.getElementById('ticker-modal').classList.add('hidden');
+            activeAssetIndex = null;
+        }
+
+        async function fetchProxy(targetUrl) {
+            const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            return JSON.parse(data.contents);
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('ticker-search-input').value;
+            const container = document.getElementById('ticker-results');
+            
+            if (!query) return;
+            
+            container.innerHTML = '<div class="text-center text-slate-400 py-4">Searching...</div>';
+            
+            try {
+                const data = await fetchProxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=10&newsCount=0`);
+                container.innerHTML = '';
+                
+                if (!data.quotes || data.quotes.length === 0) {
+                    container.innerHTML = '<div class="text-center text-slate-400 py-4">No results found</div>';
+                    return;
+                }
+                
+                data.quotes.forEach(quote => {
+                    const isUK = quote.exchange === 'LSE' || (quote.symbol && quote.symbol.endsWith('.L'));
+                    const el = document.createElement('div');
+                    el.className = `p-3 rounded-xl border-2 cursor-pointer transition-all flex justify-between items-center ${isUK ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`;
+                    el.onclick = () => selectTicker(quote.symbol);
+                    el.innerHTML = `
+                        <div>
+                            <div class="font-bold text-slate-800">${escapeHtml(quote.symbol)}</div>
+                            <div class="text-xs text-slate-500">${escapeHtml(quote.shortname || quote.longname || "")}</div>
+                        </div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest ${isUK ? 'text-blue-600' : 'text-slate-400'}">
+                            ${escapeHtml(quote.exchange)}
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+                
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="text-center text-rose-500 py-4">Search failed. Try again.</div>';
+            }
+        }
+
+        function selectTicker(symbol) {
+            if (activeAssetIndex !== null) {
+                updateAsset(activeAssetIndex, 'ticker', symbol);
+                closeModal();
+                // Auto fetch price
+                fetchAssetPrice(activeAssetIndex);
+                render();
+            }
+        }
+
+        async function fetchAssetPrice(index) {
+            const asset = assets[index];
+            if (!asset.ticker) return;
+            
+            const btn = document.getElementById(`fetch-btn-${index}`);
+            if(btn) {
+                btn.classList.add('animate-spin');
+                // Prevent infinite spin if logic fails
+                setTimeout(() => btn.classList.remove('animate-spin'), 5000);
+            }
+
+            try {
+                const data = await fetchProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${asset.ticker}?interval=1d&range=1d`);
+                const result = data.chart.result[0];
+                const price = result.meta.regularMarketPrice;
+                
+                if (price !== undefined) {
+                     // Yahoo often returns price in pence for UK stocks, but sometimes pounds.
+                     // Usually LSE stocks are in pence (GBp). We need to check currency.
+                     // If currency is 'GBp', it's pence.
+                     
+                     let finalPrice = price;
+                     if (result.meta.currency === 'GBp') {
+                         finalPrice = price / 100;
+                     }
+                     
+                     updateAsset(index, 'price', finalPrice);
+                     render(); // re-render to show update and remove spinner
+                }
+            } catch (e) {
+                console.error(e);
+                alert(`Could not fetch price for ${asset.ticker}`);
+                if(btn) btn.classList.remove('animate-spin');
+            }
         }
 
         function render() {
@@ -397,12 +533,20 @@
                 row.innerHTML = `
                     <div class="col-span-2 md:col-span-1 md:p-6">
                         <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Asset Strategy</label>
-                        <input type="text" 
-                               value="${escapeHtml(asset.name)}" 
-                               title="${escapeHtml(asset.name)}"
-                               oninput="updateAsset(${i}, 'name', this.value); this.title=this.value" 
-                               class="font-bold text-slate-800 text-lg bg-transparent border-b border-transparent focus:border-blue-500 focus:bg-white outline-none w-full transition-all placeholder-slate-300 text-ellipsis overflow-hidden" 
-                               placeholder="Asset Name">
+                        <div class="flex gap-2 items-center">
+                            <input type="text" 
+                                   value="${escapeHtml(asset.name)}" 
+                                   title="${escapeHtml(asset.name)}"
+                                   oninput="updateAsset(${i}, 'name', this.value); this.title=this.value" 
+                                   class="font-bold text-slate-800 text-lg bg-transparent border-b border-transparent focus:border-blue-500 focus:bg-white outline-none w-full transition-all placeholder-slate-300 text-ellipsis overflow-hidden" 
+                                   placeholder="Asset Name">
+                            <button onclick="openSearch(${i})" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Search Ticker">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </button>
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-1 pl-1">
+                            ${asset.ticker ? `<span class="bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold">${escapeHtml(asset.ticker)}</span>` : ''}
+                        </div>
                     </div>
                     
                     <div class="col-span-1 md:col-span-1 md:p-6">
@@ -412,7 +556,14 @@
                     
                     <div class="col-span-1 md:col-span-1 md:p-6">
                         <label class="md:hidden text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 block">Price</label>
-                        <input type="number" step="0.0001" value="${asset.price}" oninput="updateAsset(${i}, 'price', this.value)" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-sm font-black focus:bg-white focus:border-blue-500 transition-all outline-none">
+                        <div class="relative">
+                            <input type="number" step="0.0001" value="${asset.price}" oninput="updateAsset(${i}, 'price', this.value)" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-sm font-black focus:bg-white focus:border-blue-500 transition-all outline-none pr-8">
+                            ${asset.ticker ? `
+                            <button id="fetch-btn-${i}" onclick="fetchAssetPrice(${i})" class="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-600 hover:text-emerald-700 p-1 transition-transform" title="Fetch Live Price">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                            </button>
+                            ` : ''}
+                        </div>
                     </div>
                     
                     <div class="col-span-1 md:col-span-1 md:p-6">
