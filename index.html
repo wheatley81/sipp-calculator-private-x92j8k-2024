@@ -514,21 +514,34 @@
                     return;
                 }
                 
-                data.quotes.forEach(quote => {
+                data.quotes.forEach((quote, idx) => {
                     const isUK = quote.exchange === 'LSE' || (quote.symbol && quote.symbol.endsWith('.L'));
                     const el = document.createElement('div');
                     el.className = `p-3 rounded-xl border-2 cursor-pointer transition-all flex justify-between items-center ${isUK ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`;
                     el.onclick = () => selectTicker(quote.symbol);
+                    
+                    const displayName = quote.longname || quote.shortname || quote.symbol;
+                    const displaySymbol = quote.symbol;
+                    const resultId = `search-res-${idx}`;
+                    
                     el.innerHTML = `
-                        <div>
-                            <div class="font-bold text-slate-800">${escapeHtml(quote.symbol)}</div>
-                            <div class="text-xs text-slate-500">${escapeHtml(quote.shortname || quote.longname || "")}</div>
+                        <div class="flex-1 min-w-0 pr-4">
+                            <div class="flex items-baseline gap-2">
+                                <span class="font-black text-slate-900 text-sm">${escapeHtml(displaySymbol)}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest ${isUK ? 'text-blue-600' : 'text-slate-400'}">${escapeHtml(quote.exchange)}</span>
+                            </div>
+                            <div class="text-xs text-slate-500 truncate" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</div>
                         </div>
-                        <div class="text-[10px] font-bold uppercase tracking-widest ${isUK ? 'text-blue-600' : 'text-slate-400'}">
-                            ${escapeHtml(quote.exchange)}
+                        <div class="text-right">
+                             <div id="${resultId}" class="text-sm font-bold text-slate-700 font-mono">
+                                <span class="opacity-50 text-[10px]">Loading...</span>
+                             </div>
                         </div>
                     `;
                     container.appendChild(el);
+                    
+                    // Trigger async price fetch
+                    fetchPreviewPrice(quote.symbol, resultId);
                 });
                 
             } catch (e) {
@@ -547,6 +560,53 @@
                 // Auto fetch price
                 fetchAssetPrice(activeAssetIndex);
                 render();
+            }
+        }
+
+        async function fetchPreviewPrice(symbol, elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            try {
+                // Use robust fetchProxy logic (tries allorigins, codetabs, cors-anywhere)
+                const data = await fetchProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
+                
+                if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+                    throw new Error("No data");
+                }
+
+                const result = data.chart.result[0];
+                const meta = result.meta;
+                let price = meta.regularMarketPrice;
+                const currency = meta.currency;
+
+                if (price === undefined) throw new Error("No price");
+
+                // Adjust for GBp (pence) -> GBP (pounds) if necessary for display consistency?
+                // Actually, for preview, best to show what the market reports, but maybe normalize symbol?
+                // The app uses GBP internally. If currency is GBp, it's 1/100 of GBP.
+                
+                let displayPrice = price;
+                let displayCurrency = currency;
+
+                // Simple formatting
+                if (currency === 'GBp') {
+                    displayPrice = price / 100;
+                    displayCurrency = 'GBP';
+                }
+
+                // Format: £123.45 or $123.45
+                const formatter = new Intl.NumberFormat('en-GB', { 
+                    style: 'currency', 
+                    currency: displayCurrency === 'GBp' ? 'GBP' : displayCurrency 
+                });
+                
+                el.innerText = formatter.format(displayPrice);
+                el.classList.add("text-emerald-600");
+                
+            } catch (e) {
+                console.warn(`Preview fetch failed for ${symbol}`, e);
+                el.innerHTML = '<span class="text-slate-300">-</span>';
             }
         }
 
