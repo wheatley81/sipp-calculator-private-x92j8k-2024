@@ -434,11 +434,17 @@
             // List of proxies to try in order
             // 1. AllOrigins (returns JSON { contents: "string" })
             // 2. CodeTabs (returns raw content)
-            // 3. CorsAnywhere (Heroku demo, might require activation, but worth a shot)
+            // 3. WhateverOrigin (returns JSON { contents: "..." })
+            // 4. CorsAnywhere (Heroku demo, might require activation, but worth a shot)
             const proxies = [
                 {
                     name: 'AllOrigins',
                     url: (target) => `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
+                    extract: (data) => JSON.parse(data.contents)
+                },
+                {
+                    name: 'WhateverOrigin',
+                    url: (target) => `https://www.whateverorigin.org/get?url=${encodeURIComponent(target)}`,
                     extract: (data) => JSON.parse(data.contents)
                 },
                 {
@@ -555,10 +561,11 @@
 
         function selectTicker(symbol) {
             if (activeAssetIndex !== null) {
-                updateAsset(activeAssetIndex, 'ticker', symbol);
+                const idx = activeAssetIndex; // Capture index before closing modal
+                updateAsset(idx, 'ticker', symbol);
                 closeModal();
                 // Auto fetch price
-                fetchAssetPrice(activeAssetIndex);
+                fetchAssetPrice(idx);
                 render();
             }
         }
